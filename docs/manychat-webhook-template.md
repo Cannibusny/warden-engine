@@ -25,6 +25,7 @@ URL:            https://YOUR-N8N-DOMAIN/webhook/manychat/lead
 **Headers:**
 ```
 Content-Type: application/json
+X-MC-Token: <your webhook auth token from n8n credential store>
 ```
 
 **Body (JSON):**
@@ -77,15 +78,15 @@ Use one of these approaches:
 
 ---
 
-## Current Webhook URL (Tunnel — Temporary)
+## Webhook URL
 
 ```
-POST https://622fa465b063-tunnel-m04ggedz.devinapps.com/webhook/manychat/lead
+POST https://YOUR-N8N-DOMAIN/webhook/manychat/lead
 ```
 
-Basic Auth: `user` / `803919d74c8d4a4b4344e368efb82390`
+The webhook requires header authentication. Configure an `X-MC-Token` header auth credential in n8n and include it in ManyChat's External Request headers.
 
-> **Note:** This URL is temporary (Devin tunnel). Once Railway deployment is live, the URL will change to the permanent Railway domain. Update the ManyChat External Request URL at that time.
+> **Note:** Replace `YOUR-N8N-DOMAIN` with your actual n8n deployment URL (Railway, tunnel, etc.).
 
 ---
 
@@ -94,8 +95,9 @@ Basic Auth: `user` / `803919d74c8d4a4b4344e368efb82390`
 You can test the webhook manually with curl:
 
 ```bash
-curl -X POST https://user:803919d74c8d4a4b4344e368efb82390@622fa465b063-tunnel-m04ggedz.devinapps.com/webhook/manychat/lead \
+curl -X POST https://YOUR-N8N-DOMAIN/webhook/manychat/lead \
   -H "Content-Type: application/json" \
+  -H "X-MC-Token: YOUR_MANYCHAT_WEBHOOK_TOKEN" \
   -d '{
     "first_name": "Test",
     "last_name": "Lead",
