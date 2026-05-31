@@ -577,7 +577,7 @@
       {
         "parameters": {
           "respondWith": "text",
-          "responseBody": "={{ $json.html_response }}",
+          "responseBody": "={{ $json.response_html }}",
           "options": {
             "responseCode": 200,
             "responseHeaders": {
@@ -628,7 +628,7 @@
       {
         "parameters": {
           "respondWith": "text",
-          "responseBody": "={{ $json.html_response }}",
+          "responseBody": "={{ $json.response_html }}",
           "options": {
             "responseCode": 200,
             "responseHeaders": {
