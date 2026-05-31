@@ -1,0 +1,63 @@
+{
+  "name": "ManyChat Lead Capture Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "manychat/lead",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-mc-webhook",
+      "name": "ManyChat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "manychat-lead-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "ManyChat Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst cf = body.custom_fields || body;\n\nconst firstName = body.first_name || cf.first_name || '';\nconst lastName = body.last_name || cf.last_name || '';\nconst phone = body.phone || cf.phone || '';\nconst email = body.email || cf.email || '';\nconst interest = body.interest || cf.interest || '';\nconst source = body.source || cf.source || '';\nconst dateAdded = new Date().toISOString();\n\nif (!firstName && !lastName && !phone && !email) {\n  return [{\n    json: {\n      success: false,\n      error: 'No lead data received — all fields empty'\n    }\n  }];\n}\n\n// PII note: values array intentionally contains lead PII since it IS the\n// data being written to Google Sheets. W1's PII scrub strips key-matched\n// fields from payload_data but values[] passes through by design.\nconst wardenPayload = {\n  requesting_agent: 'ManyChat Lead Capture Agent',\n  target_service: 'Google_Sheets',\n  payload_data: {\n    operation: 'append',\n    spreadsheet_id: $env.CNY_SHEET_ID || 'SHEET_ID_NOT_SET',\n    range: 'Pre-Launch List!A:H',\n    values: [firstName, lastName, phone, email, interest, source, dateAdded, 'New'],\n    interest: interest,\n    source: source,\n    date_added: dateAdded,\n    status: 'New'\n  }\n};\n\nconst wardenUrl = $env.N8N_BASE_URL + '/webhook/warden/intake';\n\ntry {\n  const response = await fetch(wardenUrl, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Warden-Token': $env.WARDEN_SECRET\n    },\n    body: JSON.stringify(wardenPayload)\n  });\n\n  const result = await response.json();\n\n  if (response.status === 200) {\n    return [{\n      json: {\n        success: true,\n        message: 'Lead submitted to Warden for approval',\n        transaction_id: result.transaction_id,\n        status: result.status,\n        lead: `${firstName} ${lastName}`.trim(),\n        interest: interest\n      }\n    }];\n  } else if (response.status === 409) {\n    return [{\n      json: {\n        success: true,\n        message: 'Duplicate lead — already submitted',\n        existing_id: result.existing_id || result.transaction_id\n      }\n    }];\n  } else {\n    return [{\n      json: {\n        success: false,\n        error: result.error || `Warden returned HTTP ${response.status}`\n      }\n    }];\n  }\n} catch (err) {\n  return [{\n    json: {\n      success: false,\n      error: `Failed to reach Warden: ${err.message}`\n    }\n  }];\n}\n"
+      },
+      "id": "node-mc-transform",
+      "name": "Transform & Submit to Warden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "ManyChat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Transform & Submit to Warden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "tags": [],
+  "parentFolder": null
+}
